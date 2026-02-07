@@ -12,7 +12,9 @@
   "ui": "ui.html",
   "networkAccess": {
     "allowedDomains": [
-      "none"
+      "https://api.lingo.dev",
+      "https://engine.lingo.dev",
+      "https://corsproxy.io"
     ]
   }
 }

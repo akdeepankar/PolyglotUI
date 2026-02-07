@@ -1,17 +1,562 @@
-<h2>Rectangle Creator</h2>
-<p>Count: <input id="count" type="number" value="5"></p>
-<button id="create">Create</button>
-<button id="cancel">Cancel</button>
-<script>
+<!DOCTYPE html>
+<html>
 
-document.getElementById('create').onclick = () => {
-  const textbox = document.getElementById('count');
-  const count = parseInt(textbox.value, 10);
-  parent.postMessage({ pluginMessage: { type: 'create-shapes', count } }, '*')
-}
+<head>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
+  <style>
+    :root {
+      --primary: #6366f1;
+      --primary-hover: #4f46e5;
+      --bg: #ffffff;
+      --fg: #1f2937;
+      --border: #e5e7eb;
+      --muted: #6b7280;
+      --surface: #f9fafb;
+      --tab-inactive: #f3f4f6;
+    }
 
-document.getElementById('cancel').onclick = () => {
-  parent.postMessage({ pluginMessage: { type: 'cancel' } }, '*')
-}
+    [data-theme='dark'] {
+      --bg: #111827;
+      --fg: #f9fafb;
+      --border: #374151;
+      --muted: #9ca3af;
+      --surface: #1f2937;
+      --tab-inactive: #1f2937;
+    }
 
-</script>
+    body {
+      font-family: 'Inter', sans-serif;
+      background: var(--bg);
+      color: var(--fg);
+      margin: 0;
+      padding: 0;
+      display: flex;
+      flex-direction: column;
+      height: 100vh;
+      box-sizing: border-box;
+      overflow: hidden;
+    }
+
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      padding: 12px 16px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    h2 {
+      margin: 0;
+      font-size: 14px;
+      font-weight: 600;
+      background: linear-gradient(to right, #6366f1, #a855f7);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
+    }
+
+    #status {
+      font-size: 10px;
+      color: var(--muted);
+    }
+
+    /* Tabs */
+    .tabs {
+      display: flex;
+      background: var(--tab-inactive);
+      padding: 4px;
+      gap: 4px;
+      border-bottom: 1px solid var(--border);
+    }
+
+    .tab {
+      flex: 1;
+      padding: 8px;
+      text-align: center;
+      font-size: 11px;
+      font-weight: 500;
+      cursor: pointer;
+      border-radius: 4px;
+      color: var(--muted);
+      transition: all 0.2s;
+    }
+
+    .tab.active {
+      background: var(--bg);
+      color: var(--fg);
+      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    }
+
+    .tab-content {
+      flex: 1;
+      display: none;
+      flex-direction: column;
+      padding: 16px;
+      overflow-y: auto;
+    }
+
+    .tab-content.active {
+      display: flex;
+    }
+
+    .section {
+      margin-bottom: 20px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
+    }
+
+    .input-group {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    label {
+      font-size: 11px;
+      font-weight: 500;
+      color: var(--muted);
+    }
+
+    input,
+    select {
+      padding: 8px 12px;
+      border: 1px solid var(--border);
+      background: var(--surface);
+      color: var(--fg);
+      border-radius: 6px;
+      font-size: 12px;
+      outline: none;
+      transition: border-color 0.2s;
+    }
+
+    input:focus {
+      border-color: var(--primary);
+    }
+
+    button {
+      padding: 10px 16px;
+      background: var(--primary);
+      color: white;
+      border: none;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: background 0.2s, transform 0.1s;
+    }
+
+    button:hover {
+      background: var(--primary-hover);
+    }
+
+    button:active {
+      transform: scale(0.98);
+    }
+
+    button.secondary {
+      background: var(--surface);
+      color: var(--fg);
+      border: 1px solid var(--border);
+    }
+
+    button.secondary:hover {
+      background: var(--border);
+    }
+
+    .node-list {
+      flex: 1;
+      min-height: 200px;
+      overflow-y: auto;
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      background: var(--surface);
+      padding: 4px;
+    }
+
+    .node-item {
+      padding: 8px;
+      border-bottom: 1px solid var(--border);
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+    }
+
+    .node-item:last-child {
+      border-bottom: none;
+    }
+
+    .node-key {
+      font-family: monospace;
+      font-size: 10px;
+      color: var(--primary);
+      word-break: break-all;
+    }
+
+    .node-text {
+      font-size: 12px;
+      font-weight: 400;
+    }
+
+    .preview-bar {
+      display: flex;
+      gap: 6px;
+      padding: 12px 0;
+      border-top: 1px solid var(--border);
+      margin-top: auto;
+      overflow-x: auto;
+      white-space: nowrap;
+    }
+
+    .lang-chip {
+      padding: 4px 12px;
+      border: 1px solid var(--border);
+      border-radius: 16px;
+      font-size: 10px;
+      cursor: pointer;
+      background: var(--surface);
+      transition: all 0.2s;
+    }
+
+    .lang-chip.active {
+      background: var(--primary);
+      color: white;
+      border-color: var(--primary);
+    }
+
+    .actions {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 8px;
+      margin-top: 12px;
+    }
+
+    .spinner {
+      display: inline-block;
+      width: 12px;
+      height: 12px;
+      border: 2px solid rgba(255, 255, 255, .3);
+      border-radius: 50%;
+      border-top-color: #fff;
+      animation: spin 1s ease-in-out infinite;
+      margin-right: 8px;
+    }
+
+    @keyframes spin {
+      to {
+        transform: rotate(360deg);
+      }
+    }
+
+    .hidden {
+      display: none;
+    }
+
+    /* Settings helper */
+    .hint {
+      font-size: 10px;
+      color: var(--muted);
+      margin-top: 4px;
+    }
+  </style>
+</head>
+
+<body>
+  <div class="header">
+    <h2>Polyglot Studio</h2>
+    <div id="status">Ready</div>
+  </div>
+
+  <div class="tabs">
+    <div class="tab active" data-tab="locale">Locale</div>
+    <div class="tab" data-tab="settings">Settings</div>
+  </div>
+
+  <!-- Locale Tab -->
+  <div id="locale" class="tab-content active">
+    <div class="node-list" id="nodeList">
+      <div style="padding: 40px 20px; text-align: center; color: var(--muted); font-size: 12px;">
+        Select a frame and click Refresh to extract text.
+      </div>
+    </div>
+
+    <div class="preview-bar" id="previewBar">
+      <div class="lang-chip active" data-lang="en">English</div>
+      <div class="lang-chip" data-lang="fr">French</div>
+      <div class="lang-chip" data-lang="de">German</div>
+      <div class="lang-chip" data-lang="hi">Hindi</div>
+      <div class="lang-chip" data-lang="es">Spanish</div>
+    </div>
+
+    <div class="actions">
+      <button id="translateBtn">
+        <span class="spinner hidden" id="translateSpinner"></span>
+        Translate
+      </button>
+      <button class="secondary" id="scanBtn">Refresh Selection</button>
+    </div>
+    <div class="actions" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+      <button class="secondary" id="applyToDesignBtn" style="width: 100%;">Generate Copy</button>
+      <button class="secondary" id="exportBtn" style="width: 100%;">Export JSONs</button>
+    </div>
+  </div>
+
+  <!-- Settings Tab -->
+  <div id="settings" class="tab-content">
+    <div class="section">
+      <div class="input-group">
+        <label>Lingo.dev API Key</label>
+        <input type="password" id="apiKey" placeholder="Enter Lingo.dev key...">
+        <div class="hint">Required for AI translations.</div>
+      </div>
+
+      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
+        <button class="secondary" id="clearBtn" style="width: 100%; color: #ef4444;">Clear All Data</button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Tab switching logic
+    document.querySelectorAll('.tab').forEach(tab => {
+      tab.addEventListener('click', () => {
+        document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+        document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
+
+        tab.classList.add('active');
+        document.getElementById(tab.dataset.tab).classList.add('active');
+        setStatus(`Switched to ${tab.dataset.tab}`);
+      });
+    });
+
+    const statusEl = document.getElementById('status');
+    function setStatus(text, isError = false) {
+      statusEl.textContent = text;
+      statusEl.style.color = isError ? '#ef4444' : 'var(--muted)';
+      console.log(`[Plugin UI] ${text}`);
+    }
+
+    let extractedNodes = [];
+    let translations = { en: {}, fr: {}, de: {}, hi: {}, es: {} };
+
+    const apiKeyInput = document.getElementById('apiKey');
+    const scanBtn = document.getElementById('scanBtn');
+    const translateBtn = document.getElementById('translateBtn');
+    const exportBtn = document.getElementById('exportBtn');
+    const applyToDesignBtn = document.getElementById('applyToDesignBtn');
+    const nodeList = document.getElementById('nodeList');
+    const previewBar = document.getElementById('previewBar');
+    const translateSpinner = document.getElementById('translateSpinner');
+
+    // Load Settings
+    try {
+      apiKeyInput.value = localStorage.getItem('lingo_api_key') || '';
+    } catch (e) { }
+
+    apiKeyInput.addEventListener('change', (e) => localStorage.setItem('lingo_api_key', e.target.value));
+
+    document.getElementById('clearBtn').onclick = () => {
+      localStorage.clear();
+      apiKeyInput.value = '';
+      setStatus('Data cleared');
+      alert('Local storage cleared.');
+    };
+
+    scanBtn.addEventListener('click', () => {
+      setStatus('Scanning...');
+      parent.postMessage({ pluginMessage: { type: 'scan' } }, '*');
+    });
+
+    translateBtn.addEventListener('click', async () => {
+      const apiKey = apiKeyInput.value;
+      if (!apiKey) { alert('Go to Settings to enter Lingo.dev API Key'); return; }
+      if (extractedNodes.length === 0) { alert('Scan design for text first'); return; }
+
+      setStatus('Translating (via Background)...');
+      translateSpinner.classList.remove('hidden');
+      translateBtn.disabled = true;
+
+      const workflowId = 'figma_' + Math.random().toString(36).substring(2, 11);
+      const sourceData = {};
+      extractedNodes.forEach(node => {
+        sourceData[node.id] = node.text;
+      });
+
+      try {
+        const targetLangs = ['fr', 'de', 'hi', 'es'];
+        setStatus(`Translating (${targetLangs.length} languages)...`);
+
+        const fetchWithTimeout = async (lang) => {
+          const targetUrl = 'https://engine.lingo.dev/i18n';
+          const proxyUrl = `https://corsproxy.io/?${encodeURIComponent(targetUrl)}`;
+
+          const controller = new AbortController();
+          const timeoutId = setTimeout(() => controller.abort(), 30000); // 30s timeout
+
+          try {
+            const response = await fetch(proxyUrl, {
+              method: 'POST',
+              headers: {
+                'Content-Type': 'application/json; charset=utf-8',
+                'Authorization': `Bearer ${apiKey}`
+              },
+              signal: controller.signal,
+              body: JSON.stringify({
+                params: { workflowId, fast: false },
+                locale: { source: 'en', target: lang },
+                data: sourceData
+              })
+            });
+            clearTimeout(timeoutId);
+
+            if (!response.ok) {
+              const errorText = await response.text();
+              throw new Error(`API Error ${response.status} (${lang}): ${errorText}`);
+            }
+
+            const json = await response.json();
+            return { lang, data: json.data };
+          } catch (e) {
+            clearTimeout(timeoutId);
+            throw e;
+          }
+        };
+
+        const fetchResults = await Promise.all(targetLangs.map(fetchWithTimeout));
+        const results = {};
+        fetchResults.forEach(res => { results[res.lang] = res.data; });
+
+        // Process results locally
+        Object.keys(results).forEach(lang => {
+          extractedNodes.forEach(node => {
+            translations[lang][node.id] = results[lang][node.id];
+          });
+        });
+
+        // Sync with Figma for persistence
+        parent.postMessage({ pluginMessage: { type: 'store-translations', data: results } }, '*');
+
+        setStatus('Ready');
+        translateSpinner.classList.add('hidden');
+        translateBtn.disabled = false;
+
+        const activeChip = previewBar.querySelector('.lang-chip.active');
+        const lang = activeChip ? activeChip.dataset.lang : 'en';
+        renderNodes(lang);
+
+        alert('Translation complete!');
+      } catch (err) {
+        console.error('[UI] Translation Error:', err);
+        setStatus('Translation failed', true);
+        translateSpinner.classList.add('hidden');
+        translateBtn.disabled = false;
+        alert(`Translation failed: ${err.message}`);
+      }
+    });
+
+    function renderNodes(lang = 'en') {
+      if (extractedNodes.length === 0) {
+        nodeList.innerHTML = '<div style="padding: 40px 20px; text-align: center; color: var(--muted); font-size: 11px;">No visible text nodes.</div>';
+        return;
+      }
+      nodeList.innerHTML = extractedNodes.map(node => {
+        const textToDisplay = (translations[lang] && translations[lang][node.id]) || node.text;
+        return `
+          <div class="node-item">
+            <div class="node-key">${node.key}</div>
+            <div class="node-text">${textToDisplay}</div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.addEventListener('message', (event) => {
+      const msg = event.data.pluginMessage;
+      if (!msg) return;
+
+      if (msg.type === 'scan-results') {
+        extractedNodes = msg.data;
+
+        // Reset translations and populate from stored data if available
+        translations = { en: {}, fr: {}, de: {}, hi: {}, es: {} };
+        extractedNodes.forEach(node => {
+          translations.en[node.id] = node.text;
+          if (node.translations) {
+            Object.keys(node.translations).forEach(lang => {
+              translations[lang][node.id] = node.translations[lang];
+            });
+          }
+        });
+
+        const activeChip = previewBar.querySelector('.lang-chip.active');
+        const lang = activeChip ? activeChip.dataset.lang : 'en';
+        renderNodes(lang);
+        setStatus(`Found ${extractedNodes.length} nodes`);
+      }
+
+      if (msg.type === 'apply-complete') {
+        setStatus('Ready');
+      }
+
+      if (msg.type === 'apply-error') {
+        setStatus('Error', true);
+      }
+    });
+
+    previewBar.addEventListener('click', (e) => {
+      const chip = e.target.closest('.lang-chip');
+      if (!chip) return;
+      document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+      chip.classList.add('active');
+      const lang = chip.dataset.lang;
+      setStatus(`Previewing ${lang.toUpperCase()}`);
+
+      // Update the UI list ONLY (Preview)
+      renderNodes(lang);
+    });
+
+    applyToDesignBtn.addEventListener('click', () => {
+      const activeChip = previewBar.querySelector('.lang-chip.active');
+      if (!activeChip) return;
+      const lang = activeChip.dataset.lang;
+
+      setStatus(`Generating ${lang.toUpperCase()} copy...`);
+      parent.postMessage({
+        pluginMessage: {
+          type: 'apply-translation',
+          translations: extractedNodes.map(n => ({ id: n.id, translatedText: translations[lang][n.id] || n.text })),
+          language: lang
+        }
+      }, '*');
+    });
+
+    exportBtn.addEventListener('click', () => {
+      Object.keys(translations).forEach(lang => {
+        const exportObj = {};
+        extractedNodes.forEach(node => {
+          const keys = node.key.split('.');
+          let current = exportObj;
+          for (let i = 0; i < keys.length - 1; i++) {
+            current[keys[i]] = current[keys[i]] || {};
+            current = current[keys[i]];
+          }
+          current[keys[keys.length - 1]] = translations[lang][node.id] || node.text;
+        });
+        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+        const url = URL.createObjectURL(blob);
+        const a = document.createElement('a'); a.href = url; a.download = `${lang}.json`; a.click();
+      });
+      setStatus('Exported JSONs');
+    });
+
+    // Boot
+    setTimeout(() => {
+      setStatus('Ready');
+      parent.postMessage({ pluginMessage: { type: 'scan' } }, '*');
+    }, 500);
+  </script>
+</body>
+
+</html>

@@ -40,5 +40,8 @@
         }
       ]
     }
+  },
+  "dependencies": {
+    "lingo.dev": "^0.131.0"
   }
 }
