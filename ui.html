@@ -1,285 +1,480 @@
-<!DOCTYPE html>
-<html>
+<link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap"
+  rel="stylesheet">
+<style>
+  :root {
+    --primary: #6366f1;
+    --primary-soft: #eef2ff;
+    --primary-hover: #4f46e5;
+    --bg: #ffffff;
+    --fg: #0f172a;
+    --border: #f1f5f9;
+    --muted: #64748b;
+    --surface: #ffffff;
+    --surface-alt: #f8fafc;
+    --radius: 10px;
+    --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
+    --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+  }
 
-<head>
-  <link rel="preconnect" href="https://fonts.googleapis.com">
-  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600&display=swap" rel="stylesheet">
-  <style>
-    :root {
-      --primary: #6366f1;
-      --primary-hover: #4f46e5;
-      --bg: #ffffff;
-      --fg: #1f2937;
-      --border: #e5e7eb;
-      --muted: #6b7280;
-      --surface: #f9fafb;
-      --tab-inactive: #f3f4f6;
+  [data-theme='dark'] {
+    --bg: #0f172a;
+    --fg: #f8fafc;
+    --border: #1e293b;
+    --muted: #94a3b8;
+    --surface: #1e293b;
+    --surface-alt: #0f172a;
+    --primary-soft: #1e1b4b;
+  }
+
+  * {
+    box-sizing: border-box;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  body {
+    font-family: 'Plus Jakarta Sans', sans-serif;
+    background: var(--bg);
+    color: var(--fg);
+    margin: 0;
+    padding: 0;
+    display: flex;
+    flex-direction: column;
+    height: 100vh;
+    overflow: hidden;
+  }
+
+  .header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+  }
+
+  h2 {
+    margin: 0;
+    font-size: 15px;
+    font-weight: 700;
+    letter-spacing: -0.01em;
+    color: var(--fg);
+  }
+
+  #status {
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--muted);
+    background: var(--surface-alt);
+    padding: 4px 10px;
+    border-radius: 20px;
+    border: 1px solid var(--border);
+  }
+
+  /* Tabs */
+  .tabs-container {
+    padding: 12px 20px;
+    background: var(--surface);
+  }
+
+  .tabs {
+    display: flex;
+    background: var(--surface-alt);
+    padding: 4px;
+    border-radius: var(--radius);
+    gap: 4px;
+  }
+
+  .tab {
+    flex: 1;
+    padding: 8px;
+    text-align: center;
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    border-radius: calc(var(--radius) - 2px);
+    color: var(--muted);
+    transition: all 0.2s cubic-bezier(0.4, 0, 0.2, 1);
+  }
+
+  .tab.active {
+    background: var(--surface);
+    color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .tab-content {
+    flex: 1;
+    display: none;
+    flex-direction: column;
+    padding: 0 20px 20px 20px;
+    overflow-y: auto;
+  }
+
+  .tab-content.active {
+    display: flex;
+  }
+
+  /* Node List */
+  .node-list {
+    flex: 1;
+    min-height: 200px;
+    overflow-y: auto;
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    background: var(--surface-alt);
+    padding: 8px;
+  }
+
+  .node-item {
+    padding: 12px;
+    margin-bottom: 6px;
+    border-radius: calc(var(--radius) - 4px);
+    background: var(--surface);
+    border: 1px solid transparent;
+    transition: all 0.2s;
+  }
+
+  .node-item:hover {
+    border-color: var(--primary);
+    box-shadow: var(--shadow-sm);
+  }
+
+  .node-key {
+    font-family: ui-monospace, SFMono-Regular, Menlo, Monaco, Consolas, monospace;
+    font-size: 10px;
+    color: var(--primary);
+    margin-bottom: 4px;
+    opacity: 0.8;
+    font-weight: 500;
+  }
+
+  .node-text {
+    font-size: 12px;
+    line-height: 1.5;
+    font-weight: 500;
+  }
+
+  /* Preview Bar */
+  .preview-bar {
+    display: flex;
+    gap: 8px;
+    padding: 16px 0;
+    overflow-x: auto;
+    scrollbar-width: none;
+  }
+
+  .preview-bar::-webkit-scrollbar {
+    display: none;
+  }
+
+  .lang-chip {
+    padding: 6px 14px;
+    border: 1px solid var(--border);
+    border-radius: 20px;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    background: var(--surface);
+    color: var(--muted);
+    transition: all 0.2s;
+    white-space: nowrap;
+  }
+
+  .lang-chip.active {
+    background: var(--primary);
+    color: white;
+    border-color: var(--primary);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+  }
+
+  /* Buttons & Inputs */
+  .actions {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+    margin-bottom: 10px;
+  }
+
+  button {
+    padding: 12px 16px;
+    background: var(--primary);
+    color: white;
+    border: none;
+    border-radius: var(--radius);
+    font-size: 12px;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+  }
+
+  button:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+  }
+
+  button:active {
+    transform: translateY(0);
+  }
+
+  button.secondary {
+    background: var(--surface);
+    border: 1px solid var(--border);
+    color: var(--fg);
+  }
+
+  button.secondary:hover {
+    background: var(--surface-alt);
+    border-color: var(--primary);
+  }
+
+  .input-group {
+    margin-bottom: 20px;
+  }
+
+  label.field-label {
+    display: block;
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    margin-bottom: 8px;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
+
+  input {
+    width: 100%;
+    padding: 12px;
+    border: 1px solid var(--border);
+    background: var(--surface-alt);
+    color: var(--fg);
+    border-radius: var(--radius);
+    font-size: 13px;
+    outline: none;
+    transition: all 0.2s;
+  }
+
+  input:focus {
+    border-color: var(--primary);
+    background: var(--surface);
+    box-shadow: 0 0 0 3px var(--primary-soft);
+  }
+
+  /* Modal */
+  .modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(15, 23, 42, 0.4);
+    backdrop-filter: blur(4px);
+    display: none;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 24px;
+    animation: fadeIn 0.2s ease-out;
+  }
+
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
     }
 
-    [data-theme='dark'] {
-      --bg: #111827;
-      --fg: #f9fafb;
-      --border: #374151;
-      --muted: #9ca3af;
-      --surface: #1f2937;
-      --tab-inactive: #1f2937;
+    to {
+      opacity: 1;
+    }
+  }
+
+  .modal-overlay.active {
+    display: flex;
+  }
+
+  .modal-container {
+    background: var(--surface);
+    border-radius: 16px;
+    width: 100%;
+    max-width: 320px;
+    padding: 24px;
+    box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+    border: 1px solid var(--border);
+    transform: scale(1);
+    animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+  }
+
+  @keyframes scaleIn {
+    from {
+      transform: scale(0.95);
+      opacity: 0;
     }
 
-    body {
-      font-family: 'Inter', sans-serif;
-      background: var(--bg);
-      color: var(--fg);
-      margin: 0;
-      padding: 0;
-      display: flex;
-      flex-direction: column;
-      height: 100vh;
-      box-sizing: border-box;
-      overflow: hidden;
+    to {
+      transform: scale(1);
+      opacity: 1;
     }
+  }
 
-    .header {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding: 12px 16px;
-      border-bottom: 1px solid var(--border);
-    }
+  .lang-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin: 16px 0 24px 0;
+  }
 
-    h2 {
-      margin: 0;
-      font-size: 14px;
-      font-weight: 600;
-      background: linear-gradient(to right, #6366f1, #a855f7);
-      -webkit-background-clip: text;
-      background-clip: text;
-      -webkit-text-fill-color: transparent;
-    }
+  .lang-option {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 10px 12px;
+    border-radius: 8px;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: background 0.2s;
+  }
 
-    #status {
-      font-size: 10px;
-      color: var(--muted);
-    }
+  .lang-option:hover:not([style*="not-allowed"]) {
+    background: var(--surface-alt);
+  }
 
-    /* Tabs */
-    .tabs {
-      display: flex;
-      background: var(--tab-inactive);
-      padding: 4px;
-      gap: 4px;
-      border-bottom: 1px solid var(--border);
-    }
+  .lang-option input[type="radio"] {
+    width: 18px;
+    height: 18px;
+    margin: 0;
+    accent-color: var(--primary);
+  }
 
-    .tab {
-      flex: 1;
-      padding: 8px;
-      text-align: center;
-      font-size: 11px;
-      font-weight: 500;
-      cursor: pointer;
-      border-radius: 4px;
-      color: var(--muted);
-      transition: all 0.2s;
-    }
+  /* Custom Scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+  }
 
-    .tab.active {
-      background: var(--bg);
-      color: var(--fg);
-      box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
-    }
+  ::-webkit-scrollbar-track {
+    background: transparent;
+  }
 
-    .tab-content {
-      flex: 1;
-      display: none;
-      flex-direction: column;
-      padding: 16px;
-      overflow-y: auto;
-    }
+  ::-webkit-scrollbar-thumb {
+    background: var(--border);
+    border-radius: 10px;
+  }
 
-    .tab-content.active {
-      display: flex;
-    }
+  ::-webkit-scrollbar-thumb:hover {
+    background: var(--muted);
+  }
 
-    .section {
-      margin-bottom: 20px;
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-    }
+  .spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: #fff;
+    animation: spin 0.8s linear infinite;
+  }
 
-    .input-group {
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
     }
+  }
 
-    label {
-      font-size: 11px;
-      font-weight: 500;
-      color: var(--muted);
-    }
+  .hidden {
+    display: none;
+  }
 
-    input,
-    select {
-      padding: 8px 12px;
-      border: 1px solid var(--border);
-      background: var(--surface);
-      color: var(--fg);
-      border-radius: 6px;
-      font-size: 12px;
-      outline: none;
-      transition: border-color 0.2s;
-    }
+  /* Toggle Switch */
+  .toggle-container {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0 4px;
+    margin-bottom: 8px;
+  }
 
-    input:focus {
-      border-color: var(--primary);
-    }
+  .toggle-label {
+    font-size: 11px;
+    font-weight: 600;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+  }
 
-    button {
-      padding: 10px 16px;
-      background: var(--primary);
-      color: white;
-      border: none;
-      border-radius: 6px;
-      font-size: 12px;
-      font-weight: 500;
-      cursor: pointer;
-      transition: background 0.2s, transform 0.1s;
-    }
+  .switch {
+    position: relative;
+    display: inline-block;
+    width: 32px;
+    height: 18px;
+  }
 
-    button:hover {
-      background: var(--primary-hover);
-    }
+  .switch input {
+    opacity: 0;
+    width: 0;
+    height: 0;
+  }
 
-    button:active {
-      transform: scale(0.98);
-    }
+  .slider {
+    position: absolute;
+    cursor: pointer;
+    inset: 0;
+    background-color: var(--border);
+    transition: .4s;
+    border-radius: 20px;
+  }
 
-    button.secondary {
-      background: var(--surface);
-      color: var(--fg);
-      border: 1px solid var(--border);
-    }
+  .slider:before {
+    position: absolute;
+    content: "";
+    height: 12px;
+    width: 12px;
+    left: 3px;
+    bottom: 3px;
+    background-color: white;
+    transition: .4s;
+    border-radius: 50%;
+  }
 
-    button.secondary:hover {
-      background: var(--border);
-    }
+  input:checked+.slider {
+    background-color: var(--primary);
+  }
 
-    .node-list {
-      flex: 1;
-      min-height: 200px;
-      overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      background: var(--surface);
-      padding: 4px;
-    }
+  input:focus+.slider {
+    box-shadow: 0 0 1px var(--primary);
+  }
 
-    .node-item {
-      padding: 8px;
-      border-bottom: 1px solid var(--border);
-      display: flex;
-      flex-direction: column;
-      gap: 4px;
-    }
-
-    .node-item:last-child {
-      border-bottom: none;
-    }
-
-    .node-key {
-      font-family: monospace;
-      font-size: 10px;
-      color: var(--primary);
-      word-break: break-all;
-    }
-
-    .node-text {
-      font-size: 12px;
-      font-weight: 400;
-    }
-
-    .preview-bar {
-      display: flex;
-      gap: 6px;
-      padding: 12px 0;
-      border-top: 1px solid var(--border);
-      margin-top: auto;
-      overflow-x: auto;
-      white-space: nowrap;
-    }
-
-    .lang-chip {
-      padding: 4px 12px;
-      border: 1px solid var(--border);
-      border-radius: 16px;
-      font-size: 10px;
-      cursor: pointer;
-      background: var(--surface);
-      transition: all 0.2s;
-    }
-
-    .lang-chip.active {
-      background: var(--primary);
-      color: white;
-      border-color: var(--primary);
-    }
-
-    .actions {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 8px;
-      margin-top: 12px;
-    }
-
-    .spinner {
-      display: inline-block;
-      width: 12px;
-      height: 12px;
-      border: 2px solid rgba(255, 255, 255, .3);
-      border-radius: 50%;
-      border-top-color: #fff;
-      animation: spin 1s ease-in-out infinite;
-      margin-right: 8px;
-    }
-
-    @keyframes spin {
-      to {
-        transform: rotate(360deg);
-      }
-    }
-
-    .hidden {
-      display: none;
-    }
-
-    /* Settings helper */
-    .hint {
-      font-size: 10px;
-      color: var(--muted);
-      margin-top: 4px;
-    }
-  </style>
+  input:checked+.slider:before {
+    transform: translateX(14px);
+  }
+</style>
 </head>
 
 <body>
   <div class="header">
-    <h2>Polyglot Studio</h2>
+    <h2>Polyglot UI</h2>
     <div id="status">Ready</div>
   </div>
 
-  <div class="tabs">
-    <div class="tab active" data-tab="locale">Locale</div>
-    <div class="tab" data-tab="settings">Settings</div>
+  <div class="tabs-container">
+    <div class="tabs">
+      <div class="tab active" data-tab="locale">Localize</div>
+      <div class="tab" data-tab="settings">Settings</div>
+    </div>
   </div>
 
   <!-- Locale Tab -->
   <div id="locale" class="tab-content active">
     <div class="node-list" id="nodeList">
-      <div style="padding: 40px 20px; text-align: center; color: var(--muted); font-size: 12px;">
-        Select a frame and click Refresh to extract text.
+      <div style="padding: 60px 20px; text-align: center; color: var(--muted); font-size: 13px; font-weight: 500;">
+        Select an element and click Refresh to begin.
       </div>
+    </div>
+
+    <div class="toggle-container">
+      <span class="toggle-label">Live Canvas Preview</span>
+      <label class="switch">
+        <input type="checkbox" id="livePreviewToggle">
+        <span class="slider"></span>
+      </label>
     </div>
 
     <div class="preview-bar" id="previewBar">
@@ -295,25 +490,52 @@
         <span class="spinner hidden" id="translateSpinner"></span>
         Translate
       </button>
-      <button class="secondary" id="scanBtn">Refresh Selection</button>
+      <button class="secondary" id="scanBtn">Refresh List</button>
     </div>
-    <div class="actions" style="grid-template-columns: 1fr 1fr; gap: 8px;">
+    <div class="actions">
       <button class="secondary" id="applyToDesignBtn" style="width: 100%;">Generate Copy</button>
-      <button class="secondary" id="exportBtn" style="width: 100%;">Export JSONs</button>
+      <button class="secondary" id="exportBtn" style="width: 100%;">Export JSON</button>
     </div>
+    <button class="secondary hidden" id="revertBtn" style="width: 100%; margin-top: 2px;">Revert Design</button>
   </div>
 
   <!-- Settings Tab -->
   <div id="settings" class="tab-content">
-    <div class="section">
+    <div style="padding-top: 10px;">
       <div class="input-group">
-        <label>Lingo.dev API Key</label>
-        <input type="password" id="apiKey" placeholder="Enter Lingo.dev key...">
-        <div class="hint">Required for AI translations.</div>
+        <label class="field-label">Lingo.dev API Key</label>
+        <input type="password" id="apiKey" placeholder="Paste your key here...">
+        <div style="font-size: 11px; color: var(--muted); margin-top: 8px; line-height: 1.4;">
+          Needed for high-quality AI translations.
+        </div>
       </div>
 
-      <div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid var(--border);">
-        <button class="secondary" id="clearBtn" style="width: 100%; color: #ef4444;">Clear All Data</button>
+      <div style="margin-top: 32px; padding-top: 24px; border-top: 1px solid var(--border);">
+        <button class="secondary" id="clearBtn"
+          style="width: 100%; color: #ef4444; border-color: rgba(239, 68, 68, 0.2);">
+          Clear All Data
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Export Modal -->
+  <div class="modal-overlay" id="exportModal">
+    <div class="modal-container">
+      <div class="modal-header">
+        <h3 class="modal-title">Export Language</h3>
+        <div class="hint">Select the language to export.</div>
+      </div>
+      <div class="lang-grid">
+        <label class="lang-option"><input type="checkbox" value="en" checked> English</label>
+        <label class="lang-option"><input type="checkbox" value="fr" checked> French</label>
+        <label class="lang-option"><input type="checkbox" value="de" checked> German</label>
+        <label class="lang-option"><input type="checkbox" value="hi" checked> Hindi</label>
+        <label class="lang-option"><input type="checkbox" value="es" checked> Spanish</label>
+      </div>
+      <div class="modal-actions">
+        <button class="secondary" id="cancelExport">Cancel</button>
+        <button id="confirmExport">Download</button>
       </div>
     </div>
   </div>
@@ -346,6 +568,8 @@
     const translateBtn = document.getElementById('translateBtn');
     const exportBtn = document.getElementById('exportBtn');
     const applyToDesignBtn = document.getElementById('applyToDesignBtn');
+    const revertBtn = document.getElementById('revertBtn');
+    const livePreviewToggle = document.getElementById('livePreviewToggle');
     const nodeList = document.getElementById('nodeList');
     const previewBar = document.getElementById('previewBar');
     const translateSpinner = document.getElementById('translateSpinner');
@@ -508,13 +732,75 @@
     previewBar.addEventListener('click', (e) => {
       const chip = e.target.closest('.lang-chip');
       if (!chip) return;
+
+      const lang = chip.dataset.lang;
       document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
       chip.classList.add('active');
-      const lang = chip.dataset.lang;
-      setStatus(`Previewing ${lang.toUpperCase()}`);
 
-      // Update the UI list ONLY (Preview)
       renderNodes(lang);
+
+      // Live Preview Logic
+      if (lang !== 'en' && livePreviewToggle.checked) {
+        const payload = extractedNodes.map(n => ({
+          id: n.id,
+          translatedText: translations[lang][n.id] || n.text
+        }));
+
+        if (payload.some(p => p.translatedText !== extractedNodes.find(en => en.id === p.id).text)) {
+          parent.postMessage({
+            pluginMessage: {
+              type: 'preview-translation',
+              translations: payload,
+              language: lang
+            }
+          }, '*');
+          revertBtn.classList.remove('hidden');
+        } else {
+          setStatus(`Translate to ${lang.toUpperCase()} first for live preview`);
+        }
+      } else if (lang === 'en') {
+        parent.postMessage({ pluginMessage: { type: 'revert-preview' } }, '*');
+        revertBtn.classList.add('hidden');
+      }
+    });
+
+    livePreviewToggle.addEventListener('change', () => {
+      if (!livePreviewToggle.checked) {
+        parent.postMessage({ pluginMessage: { type: 'revert-preview' } }, '*');
+        revertBtn.classList.add('hidden');
+        // Visually reset to English chip if it was elsewhere? 
+        // Or just keep the chip selection but revert the canvas.
+        // Let's revert the canvas but keep the chip for plugin list preview.
+      } else {
+        // Trigger preview for current active chip if not English
+        const activeChip = previewBar.querySelector('.lang-chip.active');
+        if (activeChip && activeChip.dataset.lang !== 'en') {
+          const lang = activeChip.dataset.lang;
+          const payload = extractedNodes.map(n => ({
+            id: n.id,
+            translatedText: translations[lang][n.id] || n.text
+          }));
+          if (payload.some(p => p.translatedText !== extractedNodes.find(en => en.id === p.id).text)) {
+            parent.postMessage({
+              pluginMessage: {
+                type: 'preview-translation',
+                translations: payload,
+                language: lang
+              }
+            }, '*');
+            revertBtn.classList.remove('hidden');
+          }
+        }
+      }
+    });
+
+    revertBtn.addEventListener('click', () => {
+      parent.postMessage({ pluginMessage: { type: 'revert-preview' } }, '*');
+      revertBtn.classList.add('hidden');
+      // Set active chip back to english visually
+      document.querySelectorAll('.lang-chip').forEach(c => c.classList.remove('active'));
+      previewBar.querySelector('[data-lang="en"]').classList.add('active');
+      renderNodes('en');
     });
 
     applyToDesignBtn.addEventListener('click', () => {
@@ -532,23 +818,88 @@
       }, '*');
     });
 
+    const exportModal = document.getElementById('exportModal');
+    const cancelExport = document.getElementById('cancelExport');
+    const confirmExport = document.getElementById('confirmExport');
+
+    const langGrid = exportModal.querySelector('.lang-grid');
+
     exportBtn.addEventListener('click', () => {
-      Object.keys(translations).forEach(lang => {
-        const exportObj = {};
-        extractedNodes.forEach(node => {
-          const keys = node.key.split('.');
-          let current = exportObj;
-          for (let i = 0; i < keys.length - 1; i++) {
-            current[keys[i]] = current[keys[i]] || {};
-            current = current[keys[i]];
-          }
-          current[keys[keys.length - 1]] = translations[lang][node.id] || node.text;
-        });
-        const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
-        const url = URL.createObjectURL(blob);
-        const a = document.createElement('a'); a.href = url; a.download = `${lang}.json`; a.click();
+      if (extractedNodes.length === 0) {
+        alert('Scan design for text first');
+        return;
+      }
+
+      // Dynamically populate lang-grid based on available data
+      const langs = [
+        { id: 'en', name: 'English' },
+        { id: 'fr', name: 'French' },
+        { id: 'de', name: 'German' },
+        { id: 'hi', name: 'Hindi' },
+        { id: 'es', name: 'Spanish' }
+      ];
+
+      let firstSelected = false;
+      langGrid.innerHTML = langs.map(lang => {
+        const hasData = Object.keys(translations[lang.id]).length > 0;
+        const disabledAttr = hasData ? '' : 'disabled';
+
+        let checkedAttr = '';
+        if (hasData && !firstSelected) {
+          checkedAttr = 'checked';
+          firstSelected = true;
+        }
+
+        const labelStyle = hasData ? '' : 'style="color: var(--muted); cursor: not-allowed;"';
+        const hint = hasData ? '' : ' <span style="font-size: 9px; opacity: 0.7;">(no data)</span>';
+
+        return `
+          <label class="lang-option" ${labelStyle}>
+            <input type="radio" name="exportLang" value="${lang.id}" ${checkedAttr} ${disabledAttr}>
+            ${lang.name}${hint}
+          </label>
+        `;
+      }).join('');
+
+      exportModal.classList.add('active');
+    });
+
+    cancelExport.addEventListener('click', () => {
+      exportModal.classList.remove('active');
+    });
+
+    confirmExport.addEventListener('click', async () => {
+      const selectedRadio = exportModal.querySelector('input[name="exportLang"]:checked');
+
+      if (!selectedRadio) {
+        alert('Please select a language to export.');
+        return;
+      }
+
+      const lang = selectedRadio.value;
+      setStatus(`Exporting ${lang.toUpperCase()}...`);
+      exportModal.classList.remove('active');
+
+      const exportObj = {};
+      extractedNodes.forEach(node => {
+        const keys = node.key.split('.');
+        let current = exportObj;
+        for (let i = 0; i < keys.length - 1; i++) {
+          current[keys[i]] = current[keys[i]] || {};
+          current = current[keys[i]];
+        }
+        current[keys[keys.length - 1]] = translations[lang][node.id] || node.text;
       });
-      setStatus('Exported JSONs');
+
+      const blob = new Blob([JSON.stringify(exportObj, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${lang}.json`;
+      a.click();
+
+      setTimeout(() => URL.revokeObjectURL(url), 100);
+      setStatus('Exported');
     });
 
     // Boot

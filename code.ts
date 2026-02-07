@@ -114,98 +114,134 @@ async function scanSelection() {
 figma.ui.onmessage = async (msg) => {
   console.log('[Plugin Core] Message received:', msg.type);
 
-  if (msg.type === 'scan') {
-    figma.notify('Scanning design for text...', { timeout: 1000 });
-    await scanSelection();
-  }
+  switch (msg.type) {
+    case 'scan':
+      figma.notify('Scanning design for text...', { timeout: 1000 });
+      await scanSelection();
+      break;
 
-  if (msg.type === 'apply-translation') {
-    const { translations, language } = msg;
-    const selection = figma.currentPage.selection;
+    case 'apply-translation':
+      await handleApplyTranslation(msg);
+      break;
 
-    if (selection.length === 0) {
-      figma.notify('Please select the frame or elements you want to duplicate with translations.', { error: true });
-      return;
-    }
+    case 'store-translations':
+      await handleStoreTranslations(msg);
+      break;
 
-    figma.notify(`Duplicating selection for ${language.toUpperCase()}...`);
-    console.log(`[Apply] Duplicating selection of ${selection.length} items`);
+    case 'preview-translation':
+      await handlePreviewTranslation(msg);
+      break;
 
-    try {
-      const clones: SceneNode[] = [];
+    case 'revert-preview':
+      await handleRevertPreview();
+      break;
 
-      for (const nodeToClone of selection) {
-        console.log(`[Apply] Cloning: ${nodeToClone.name}`);
-        const clone = nodeToClone.clone();
-        clone.name = `${nodeToClone.name} (${language.toUpperCase()})`;
-
-        // Move to appropriate parent and offset
-        if (nodeToClone.parent) {
-          nodeToClone.parent.appendChild(clone);
-        }
-
-        // Offset the clone to the right
-        clone.x = nodeToClone.x + nodeToClone.width + 100;
-        clone.y = nodeToClone.y;
-
-        // Find all text nodes in the clone
-        const cloneTextNodes = (clone as any).findAll ? (clone as any).findAll((n: any) => n.type === 'TEXT') : (clone.type === 'TEXT' ? [clone] : []);
-        console.log(`[Apply] Found ${cloneTextNodes.length} text nodes within clone of ${nodeToClone.name}`);
-
-        for (const textNode of cloneTextNodes) {
-          try {
-            const nodeKey = textNode.getPluginData('nodeKey');
-            if (!nodeKey) continue;
-
-            // Find matching translation by nodeKey
-            // We use the original node reference if possible through the provided translation IDs
-            const translationItem = await (async () => {
-              for (const t of translations) {
-                const originalNode = await figma.getNodeByIdAsync(t.id);
-                if (originalNode && originalNode.getPluginData('nodeKey') === nodeKey) {
-                  return t;
-                }
-              }
-              return null;
-            })();
-
-            if (translationItem) {
-              await figma.loadFontAsync(textNode.fontName as FontName);
-              textNode.characters = translationItem.translatedText;
-              textNode.setPluginData('translation-' + language, translationItem.translatedText);
-            }
-          } catch (nodeErr) {
-            console.warn(`[Apply] Failed to process text node in clone:`, nodeErr);
-          }
-        }
-        clones.push(clone);
-      }
-
-      figma.currentPage.selection = clones;
-      figma.viewport.scrollAndZoomIntoView(clones);
-      figma.notify(`${language.toUpperCase()} copies generated!`);
-      figma.ui.postMessage({ type: 'apply-complete' });
-    } catch (err: any) {
-      console.error('[Apply] Critical error during selection duplication:', err);
-      figma.notify(`Error: ${err.message}`, { error: true });
-      figma.ui.postMessage({ type: 'apply-error', message: err.message });
-    }
-  }
-
-  if (msg.type === 'store-translations') {
-    const { data } = msg; // { fr: { id: text }, ... }
-    for (const lang of Object.keys(data)) {
-      for (const id of Object.keys(data[lang])) {
-        const node = await figma.getNodeByIdAsync(id);
-        if (node) {
-          node.setPluginData('translation-' + lang, data[lang][id]);
-        }
-      }
-    }
-  }
-
-
-  if (msg.type === 'close') {
-    figma.closePlugin();
+    case 'close':
+      figma.closePlugin();
+      break;
   }
 };
+
+async function handleApplyTranslation(msg: any) {
+  const { translations, language } = msg;
+  const selection = figma.currentPage.selection;
+
+  if (selection.length === 0) {
+    figma.notify('Please select elements to duplicate.', { error: true });
+    return;
+  }
+
+  figma.notify(`Creating ${language.toUpperCase()} copy...`);
+
+  try {
+    const clones: SceneNode[] = [];
+    for (const nodeToClone of selection) {
+      const clone = nodeToClone.clone();
+      clone.name = `${nodeToClone.name} (${language.toUpperCase()})`;
+      if (nodeToClone.parent) nodeToClone.parent.appendChild(clone);
+      clone.x = nodeToClone.x + nodeToClone.width + 100;
+      clone.y = nodeToClone.y;
+
+      const cloneTextNodes = (clone as any).findAll ?
+        (clone as any).findAll((n: any) => n.type === 'TEXT') :
+        (clone.type === 'TEXT' ? [clone] : []);
+
+      for (const textNode of cloneTextNodes) {
+        const nodeKey = textNode.getPluginData('nodeKey');
+        if (!nodeKey) continue;
+
+        // Find matching translation by nodeKey
+        for (const t of translations) {
+          const originalNode = await figma.getNodeByIdAsync(t.id);
+          if (originalNode && originalNode.getPluginData('nodeKey') === nodeKey) {
+            await figma.loadFontAsync(textNode.fontName as FontName);
+            textNode.characters = t.translatedText;
+            textNode.setPluginData('translation-' + language, t.translatedText);
+            break;
+          }
+        }
+      }
+      clones.push(clone);
+    }
+
+    figma.currentPage.selection = clones;
+    figma.viewport.scrollAndZoomIntoView(clones);
+    figma.notify(`${language.toUpperCase()} copies generated!`);
+    figma.ui.postMessage({ type: 'apply-complete' });
+  } catch (err: any) {
+    console.error('[Apply] Error:', err);
+    figma.notify(`Error: ${err.message}`, { error: true });
+    figma.ui.postMessage({ type: 'apply-error', message: err.message });
+  }
+}
+
+async function handleStoreTranslations(msg: any) {
+  const { data } = msg;
+  for (const lang of Object.keys(data)) {
+    for (const id of Object.keys(data[lang])) {
+      const node = await figma.getNodeByIdAsync(id);
+      if (node) node.setPluginData('translation-' + lang, data[lang][id]);
+    }
+  }
+}
+
+async function handlePreviewTranslation(msg: any) {
+  const { translations, language } = msg;
+  figma.notify(`Previewing ${language.toUpperCase()}...`);
+  for (const item of translations) {
+    const node = (await figma.getNodeByIdAsync(item.id)) as TextNode;
+    if (node && node.type === 'TEXT') {
+      if (!node.getPluginData('originalText')) {
+        node.setPluginData('originalText', node.characters);
+      }
+      await figma.loadFontAsync(node.fontName as FontName);
+      node.characters = item.translatedText;
+    }
+  }
+}
+
+async function handleRevertPreview() {
+  figma.notify('Reverting design...');
+  const nodesToRevert: TextNode[] = [];
+
+  function findRevertible(node: SceneNode) {
+    if (node.type === 'TEXT' && node.getPluginData('originalText')) {
+      nodesToRevert.push(node);
+    } else if ('children' in node) {
+      for (const child of (node as any).children) {
+        findRevertible(child);
+      }
+    }
+  }
+
+  figma.currentPage.children.forEach(findRevertible);
+
+  for (const node of nodesToRevert) {
+    const original = node.getPluginData('originalText');
+    if (original) {
+      await figma.loadFontAsync(node.fontName as FontName);
+      node.characters = original;
+    }
+  }
+  figma.notify('Design reverted');
+}
