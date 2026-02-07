@@ -92,11 +92,15 @@ async function scanSelection() {
     // Store the nodeKey so we can identify this node in clones
     node.setPluginData('nodeKey', key);
 
-    // Retrieve stored translations
+    // Retrieve stored translations and manual flags
     const storedTranslations: any = {};
+    const manualFlags: any = {};
     ['fr', 'de', 'hi', 'es'].forEach(lang => {
       const trans = node.getPluginData('translation-' + lang);
       if (trans) storedTranslations[lang] = trans;
+
+      const isManual = node.getPluginData('isManual-' + lang);
+      if (isManual === 'true') manualFlags[lang] = true;
     });
 
     results.push({
@@ -104,7 +108,8 @@ async function scanSelection() {
       text: originalText,
       key: key,
       context: context,
-      translations: storedTranslations
+      translations: storedTranslations,
+      manualFlags: manualFlags
     });
   }
 
@@ -134,6 +139,10 @@ figma.ui.onmessage = async (msg) => {
 
     case 'revert-preview':
       await handleRevertPreview();
+      break;
+
+    case 'update-manual-translation':
+      await handleUpdateManualTranslation(msg);
       break;
 
     case 'close':
@@ -244,4 +253,14 @@ async function handleRevertPreview() {
     }
   }
   figma.notify('Design reverted');
+}
+
+async function handleUpdateManualTranslation(msg: any) {
+  const { id, lang, text } = msg;
+  const node = await figma.getNodeByIdAsync(id);
+  if (node) {
+    node.setPluginData('translation-' + lang, text);
+    node.setPluginData('isManual-' + lang, 'true');
+    console.log(`[Plugin Core] Manual override saved for ${id} in ${lang}`);
+  }
 }
