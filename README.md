@@ -1,40 +1,39 @@
-Below are the steps to get your plugin running. You can also find instructions at:
+# Polyglot UI - Figma Plugin
 
-  https://www.figma.com/plugin-docs/plugin-quickstart-guide/
+Automate your workflow directly in Figma with AI-powered translations and real-time layout stress testing.
 
-This plugin template uses Typescript and NPM, two standard tools in creating JavaScript applications.
+## Local Development Setup
 
-First, download Node.js which comes with NPM. This will allow you to install TypeScript and other
-libraries. You can find the download link here:
+Follow these steps to get the plugin running locally in your Figma environment:
 
-  https://nodejs.org/en/download/
+### 1. Install Dependencies
+Make sure you have [Node.js](https://nodejs.org/) installed, then run:
+```bash
+npm install
+```
 
-Next, install TypeScript using the command:
+### 2. Run the Build Watcher
+The plugin uses TypeScript, which needs to be compiled to JavaScript. Start the watcher to automatically compile your changes:
+```bash
+npm run watch
+```
+*(Alternatively, in VS Code, press `Cmd+Shift+B` and select `npm: watch`)*.
 
-  npm install -g typescript
+### 3. Load in Figma
+1. Open the **Figma Desktop App**.
+2. Go to **Plugins > Development > Import plugin from manifest...**.
+3. Select the `manifest.json` file in this directory.
 
-Finally, in the directory of your plugin, get the latest type definitions for the plugin API by running:
+## Core Features
+- **Scan Design**: Extracts all text nodes from your current selection.
+- **AI Translation**: Generates localized copies using the Lingo.dev engine.
+- **Live Preview**: Failsafe your layout by previewing translations directly on the canvas.
+- **Stress Test**: Pseudo-localize your UI to catch expansion and character support issues.
+- **Human-in-the-Loop**: Manually tweak translations and save overrides that AI won't overwrite.
 
-  npm install --save-dev @figma/plugin-typings
+## Built With
+- [Lingo.dev API](https://lingo.dev) - The translation engine.
+- TypeScript & HTML/CSS.
 
-If you are familiar with JavaScript, TypeScript will look very familiar. In fact, valid JavaScript code
-is already valid Typescript code.
-
-TypeScript adds type annotations to variables. This allows code editors such as Visual Studio Code
-to provide information about the Figma API while you are writing code, as well as help catch bugs
-you previously didn't notice.
-
-For more information, visit https://www.typescriptlang.org/
-
-Using TypeScript requires a compiler to convert TypeScript (code.ts) into JavaScript (code.js)
-for the browser to run.
-
-We recommend writing TypeScript code using Visual Studio code:
-
-1. Download Visual Studio Code if you haven't already: https://code.visualstudio.com/.
-2. Open this directory in Visual Studio Code.
-3. Compile TypeScript to JavaScript: Run the "Terminal > Run Build Task..." menu item,
-    then select "npm: watch". You will have to do this again every time
-    you reopen Visual Studio Code.
-
-That's it! Visual Studio Code will regenerate the JavaScript file every time you save.
+---
+*Happy Designing! 🏗️🚀*
