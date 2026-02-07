@@ -15,9 +15,10 @@
       --muted: #64748b;
       --surface: #ffffff;
       --surface-alt: #f8fafc;
-      --radius: 10px;
-      --shadow-sm: 0 1px 2px 0 rgb(0 0 0 / 0.05);
-      --shadow-md: 0 4px 6px -1px rgb(0 0 0 / 0.1), 0 2px 4px -2px rgb(0 0 0 / 0.1);
+      --radius: 14px;
+      --shadow-sm: 0 2px 4px 0 rgb(0 0 0 / 0.05);
+      --shadow-md: 0 10px 15px -3px rgb(0 0 0 / 0.05), 0 4px 6px -4px rgb(0 0 0 / 0.05);
+      --shadow-lg: 0 20px 25px -5px rgb(0 0 0 / 0.05), 0 8px 10px -6px rgb(0 0 0 / 0.05);
     }
 
     [data-theme='dark'] {
@@ -51,17 +52,26 @@
       display: flex;
       justify-content: space-between;
       align-items: center;
-      padding: 16px 20px;
+      padding: 18px 20px;
       border-bottom: 1px solid var(--border);
-      background: var(--surface);
+      background: rgba(255, 255, 255, 0.7);
+      backdrop-filter: blur(12px);
+      position: sticky;
+      top: 0;
+      z-index: 100;
     }
 
     h2 {
       margin: 0;
-      font-size: 15px;
-      font-weight: 700;
-      letter-spacing: -0.01em;
+      font-size: 14px;
+      font-weight: 800;
+      letter-spacing: -0.02em;
       color: var(--fg);
+      text-transform: uppercase;
+      background: linear-gradient(135deg, var(--fg) 0%, var(--primary) 100%);
+      -webkit-background-clip: text;
+      background-clip: text;
+      -webkit-text-fill-color: transparent;
     }
 
     #status {
@@ -123,24 +133,26 @@
       flex: 1;
       min-height: 200px;
       overflow-y: auto;
-      border: 1px solid var(--border);
-      border-radius: var(--radius);
-      background: var(--surface-alt);
-      padding: 8px;
+      background: transparent;
+      padding: 4px;
+      display: flex;
+      flex-direction: column;
+      gap: 12px;
     }
 
     .node-item {
-      padding: 12px;
-      margin-bottom: 6px;
-      border-radius: calc(var(--radius) - 4px);
+      padding: 16px;
+      border-radius: var(--radius);
       background: var(--surface);
-      border: 1px solid transparent;
-      transition: all 0.2s;
+      border: 1px solid var(--border);
+      box-shadow: var(--shadow-sm);
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
     }
 
     .node-item:hover {
-      border-color: var(--primary);
-      box-shadow: var(--shadow-sm);
+      border-color: var(--primary-soft);
+      box-shadow: var(--shadow-md);
+      transform: translateY(-2px);
     }
 
     .node-key {
@@ -199,23 +211,33 @@
     }
 
     .lang-chip {
-      padding: 6px 14px;
+      padding: 8px 16px;
       border: 1px solid var(--border);
-      border-radius: 20px;
+      border-radius: 30px;
       font-size: 11px;
       font-weight: 600;
       cursor: pointer;
-      background: var(--surface);
+      background: var(--bg);
       color: var(--muted);
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
       white-space: nowrap;
+      display: flex;
+      align-items: center;
+      gap: 6px;
+    }
+
+    .lang-chip:hover {
+      border-color: var(--primary);
+      color: var(--primary);
+      background: var(--primary-soft);
     }
 
     .lang-chip.active {
       background: var(--primary);
       color: white;
       border-color: var(--primary);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.25);
+      box-shadow: 0 8px 20px rgba(99, 102, 241, 0.3);
+      transform: translateY(-1px) scale(1.02);
     }
 
     /* Buttons & Inputs */
@@ -233,19 +255,20 @@
       border: none;
       border-radius: var(--radius);
       font-size: 12px;
-      font-weight: 600;
+      font-weight: 700;
       cursor: pointer;
-      transition: all 0.2s;
+      transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
       display: flex;
       align-items: center;
       justify-content: center;
       gap: 8px;
+      box-shadow: 0 4px 6px -1px rgba(99, 102, 241, 0.1), 0 2px 4px -1px rgba(99, 102, 241, 0.06);
     }
 
     button:hover {
       background: var(--primary-hover);
-      transform: translateY(-1px);
-      box-shadow: 0 4px 12px rgba(99, 102, 241, 0.2);
+      transform: translateY(-2px);
+      box-shadow: 0 10px 15px -3px rgba(99, 102, 241, 0.2), 0 4px 6px -2px rgba(99, 102, 241, 0.1);
     }
 
     button:active {
@@ -253,14 +276,37 @@
     }
 
     button.secondary {
-      background: var(--surface);
+      background: var(--bg);
       border: 1px solid var(--border);
       color: var(--fg);
+      box-shadow: var(--shadow-sm);
     }
 
     button.secondary:hover {
       background: var(--surface-alt);
-      border-color: var(--primary);
+      border-color: var(--primary-soft);
+      box-shadow: var(--shadow-md);
+    }
+
+    button.tertiary {
+      background: transparent;
+      color: var(--muted);
+      font-size: 10px;
+      font-weight: 700;
+      padding: 4px 8px;
+      border-radius: 6px;
+      border: none;
+      box-shadow: none;
+      text-transform: uppercase;
+      letter-spacing: 0.05em;
+      transition: all 0.2s;
+    }
+
+    button.tertiary:hover {
+      background: var(--primary-soft);
+      color: var(--primary);
+      transform: none;
+      box-shadow: none;
     }
 
     .input-group {
@@ -325,19 +371,19 @@
 
     .modal-container {
       background: var(--surface);
-      border-radius: 16px;
+      border-radius: 20px;
       width: 100%;
       max-width: 320px;
       padding: 24px;
-      box-shadow: 0 20px 25px -5px rgb(0 0 0 / 0.1), 0 8px 10px -6px rgb(0 0 0 / 0.1);
+      box-shadow: var(--shadow-lg);
       border: 1px solid var(--border);
       transform: scale(1);
-      animation: scaleIn 0.2s cubic-bezier(0.34, 1.56, 0.64, 1);
+      animation: scaleIn 0.3s cubic-bezier(0.34, 1.56, 0.64, 1);
     }
 
     @keyframes scaleIn {
       from {
-        transform: scale(0.95);
+        transform: scale(0.9);
         opacity: 0;
       }
 
@@ -449,28 +495,25 @@
       cursor: pointer;
       inset: 0;
       background-color: var(--border);
-      transition: .4s;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 20px;
     }
 
     .slider:before {
       position: absolute;
       content: "";
-      height: 12px;
-      width: 12px;
-      left: 3px;
-      bottom: 3px;
+      height: 14px;
+      width: 14px;
+      left: 2px;
+      bottom: 2px;
       background-color: white;
-      transition: .4s;
+      transition: all 0.4s cubic-bezier(0.4, 0, 0.2, 1);
       border-radius: 50%;
+      box-shadow: var(--shadow-sm);
     }
 
     input:checked+.slider {
       background-color: var(--primary);
-    }
-
-    input:focus+.slider {
-      box-shadow: 0 0 1px var(--primary);
     }
 
     input:checked+.slider:before {
@@ -482,7 +525,10 @@
 <body>
   <div class="header">
     <h2>Polyglot UI</h2>
-    <div id="status">Ready</div>
+    <div style="display: flex; gap: 8px; align-items: center;">
+      <button id="clearSessionBtn" class="tertiary">Clear</button>
+      <div id="status">Ready</div>
+    </div>
   </div>
 
   <div class="tabs-container">
@@ -602,6 +648,7 @@
     const nodeList = document.getElementById('nodeList');
     const previewBar = document.getElementById('previewBar');
     const translateSpinner = document.getElementById('translateSpinner');
+    const clearSessionBtn = document.getElementById('clearSessionBtn');
 
     // Load Settings
     try {
@@ -610,11 +657,31 @@
 
     apiKeyInput.addEventListener('change', (e) => localStorage.setItem('lingo_api_key', e.target.value));
 
+    clearSessionBtn.addEventListener('click', () => {
+      extractedNodes = [];
+      translations = { en: {}, fr: {}, de: {}, hi: {}, es: {} };
+      renderNodes('en');
+      parent.postMessage({ pluginMessage: { type: 'revert-preview' } }, '*');
+      revertBtn.classList.add('hidden');
+      setStatus('Session cleared');
+    });
+
     document.getElementById('clearBtn').onclick = () => {
       localStorage.clear();
       apiKeyInput.value = '';
-      setStatus('Data cleared');
-      alert('Local storage cleared.');
+
+      // Reset local state
+      extractedNodes = [];
+      translations = { en: {}, fr: {}, de: {}, hi: {}, es: {} };
+
+      // Clear UI
+      renderNodes('en');
+
+      // Clear Figma Storage
+      parent.postMessage({ pluginMessage: { type: 'clear-storage' } }, '*');
+
+      setStatus('All data cleared');
+      alert('Local storage and design metadata cleared.');
     };
 
     scanBtn.addEventListener('click', () => {
@@ -831,8 +898,11 @@
       if (!msg) return;
 
       if (msg.type === 'scan-results') {
-        extractedNodes = msg.data;
+        extractedNodes = msg.data || [];
+
+        // Reset translations and manual flags
         translations = { en: {}, fr: {}, de: {}, hi: {}, es: {} };
+
         extractedNodes.forEach(node => {
           translations.en[node.id] = node.text;
           if (node.translations) {
@@ -842,8 +912,10 @@
           }
         });
 
+        // Ensure we render the active language immediately
         const activeChip = previewBar.querySelector('.lang-chip.active');
         const lang = activeChip ? activeChip.dataset.lang : 'en';
+
         renderNodes(lang);
         setStatus(`Found ${extractedNodes.length} nodes`);
       }

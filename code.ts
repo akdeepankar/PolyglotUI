@@ -68,49 +68,67 @@ async function scanSelection() {
   // Optimized Font Loading: Collect all unique fonts first
   const uniqueFonts = new Map<string, FontName>();
   textNodes.forEach(node => {
-    const font = node.fontName as FontName;
-    uniqueFonts.set(`${font.family}_${font.style}`, font);
+    if (node.fontName !== figma.mixed) {
+      const font = node.fontName as FontName;
+      if (font && font.family) {
+        uniqueFonts.set(`${font.family}_${font.style}`, font);
+      }
+    } else {
+      // For mixed fonts, we need to load all fonts used in the node
+      // For simplicity in a hackathon plugin, we'll try to load the common Fallback or skip if too complex
+      // Better: figma.loadFontAsync(node.getRangeFontName(0, 1) as FontName)
+    }
   });
 
-  await Promise.all(
-    Array.from(uniqueFonts.values()).map(font => figma.loadFontAsync(font).catch(() => { }))
-  );
+  try {
+    await Promise.all(
+      Array.from(uniqueFonts.values()).map(font => figma.loadFontAsync(font).catch(err => {
+        console.warn('[Plugin Core] Failed to load font:', font, err);
+      }))
+    );
+  } catch (err) {
+    console.error('[Plugin Core] Font loading batch error:', err);
+  }
 
   const results = [];
   for (const node of textNodes) {
-    const originalText = node.characters;
-    if (!originalText.trim()) continue;
+    try {
+      const originalText = node.characters;
+      if (!originalText || !originalText.trim()) continue;
 
-    const context = getContext(node);
-    const screen = getScreenName(node);
-    const slug = slugify(originalText);
-    const key = `${screen}.${context}.${slug}`;
+      const context = getContext(node);
+      const screen = getScreenName(node);
+      const slug = slugify(originalText);
+      const key = `${screen}.${context}.${slug}`;
 
-    if (!node.getPluginData('originalText')) {
-      node.setPluginData('originalText', originalText);
+      if (!node.getPluginData('originalText')) {
+        node.setPluginData('originalText', originalText);
+      }
+      // Store the nodeKey so we can identify this node in clones
+      node.setPluginData('nodeKey', key);
+
+      // Retrieve stored translations and manual flags
+      const storedTranslations: any = {};
+      const manualFlags: any = {};
+      ['fr', 'de', 'hi', 'es'].forEach(lang => {
+        const trans = node.getPluginData('translation-' + lang);
+        if (trans) storedTranslations[lang] = trans;
+
+        const isManual = node.getPluginData('isManual-' + lang);
+        if (isManual === 'true') manualFlags[lang] = true;
+      });
+
+      results.push({
+        id: node.id,
+        text: originalText,
+        key: key,
+        context: context,
+        translations: storedTranslations,
+        manualFlags: manualFlags
+      });
+    } catch (nodeErr) {
+      console.error('[Plugin Core] Error processing node:', node.id, nodeErr);
     }
-    // Store the nodeKey so we can identify this node in clones
-    node.setPluginData('nodeKey', key);
-
-    // Retrieve stored translations and manual flags
-    const storedTranslations: any = {};
-    const manualFlags: any = {};
-    ['fr', 'de', 'hi', 'es'].forEach(lang => {
-      const trans = node.getPluginData('translation-' + lang);
-      if (trans) storedTranslations[lang] = trans;
-
-      const isManual = node.getPluginData('isManual-' + lang);
-      if (isManual === 'true') manualFlags[lang] = true;
-    });
-
-    results.push({
-      id: node.id,
-      text: originalText,
-      key: key,
-      context: context,
-      translations: storedTranslations,
-      manualFlags: manualFlags
-    });
   }
 
   figma.ui.postMessage({ type: 'scan-results', data: results });
@@ -143,6 +161,10 @@ figma.ui.onmessage = async (msg) => {
 
     case 'update-manual-translation':
       await handleUpdateManualTranslation(msg);
+      break;
+
+    case 'clear-storage':
+      await handleClearStorage();
       break;
 
     case 'close':
@@ -263,4 +285,26 @@ async function handleUpdateManualTranslation(msg: any) {
     node.setPluginData('isManual-' + lang, 'true');
     console.log(`[Plugin Core] Manual override saved for ${id} in ${lang}`);
   }
+}
+
+async function handleClearStorage() {
+  figma.notify('Cleaning up all design metadata...', { timeout: 2000 });
+
+  function clearNode(node: SceneNode) {
+    node.setPluginData('originalText', '');
+    node.setPluginData('nodeKey', '');
+    ['fr', 'de', 'hi', 'es'].forEach(lang => {
+      node.setPluginData('translation-' + lang, '');
+      node.setPluginData('isManual-' + lang, '');
+    });
+
+    if ('children' in node) {
+      for (const child of node.children) {
+        clearNode(child as SceneNode);
+      }
+    }
+  }
+
+  figma.currentPage.children.forEach(clearNode);
+  figma.notify('All plugin data cleared from design!');
 }
